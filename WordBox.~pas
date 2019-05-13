@@ -1,0 +1,489 @@
+unit WordBox;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, StdCtrls, Main, WordBoxInit, ExtCtrls, PHPEdit;
+
+type
+  TWordBox = class(TListBox)
+  private
+    FPHPFuncBmp: TBitmap;
+    FJSObjBmp: TBitmap;
+    FJSMthBmp: TBitmap;
+    FPropBtm: TBitmap;
+    FCSSAttrBmp: TBitmap;
+    FHTMLTagBmp: TBitmap;
+    procedure ListBoxDrawItem(Control: TWinControl; Index: Integer;
+      Rect: TRect; State: TOwnerDrawState);
+    procedure KeyPress(Sender: TObject; var Key: Char);
+    procedure DblClick(Sender: TObject);
+    procedure WMHotKey(var msg: TWMKeyDown); message WM_KEYDOWN;
+  public
+    PREF_: String;
+    PlaceState: TState;
+    PlaceScanMd: TScanMode;
+    constructor Create(AOwner: TWinControl);
+    destructor Destroy; override;
+  end;
+
+  TWordBoxForm = class(TForm)
+    Panel: TPanel;
+    procedure SetParams;
+    procedure FormCreate(Sender: TObject);
+    procedure FormKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
+    procedure FormKeyPress(Sender: TObject; var Key: Char);
+  private
+    ListBox: TWordBox;
+  public
+    { Public declarations }
+  end;
+
+var
+  WordBoxForm: TWordBoxForm;
+
+implementation
+
+uses Types;
+
+{$R *.dfm}
+{$R WordBox.res}
+
+constructor TWordBox.Create(AOwner: TWinControl);
+begin
+  inherited Create(AOwner);
+  Style := lbOwnerDrawFixed; 
+  OnDrawItem := ListBoxDrawItem;
+  OnKeyPress := KeyPress;
+  OnDblClick := DblClick;
+
+  FJSObjBmp := TBitmap.Create;
+  FJSObjBmp.Handle := LoadBitmap(HInstance,'JSOBJ');
+  FPHPFuncBmp := TBitmap.Create;
+  FPHPFuncBmp.Handle := LoadBitmap(HInstance,'PHPFUNC');
+  FJSMthBmp := TBitmap.Create;
+  FJSMthBmp.Handle := LoadBitmap(HInstance,'JSMTH');
+  FPropBtm := TBitmap.Create;
+  FPropBtm.Handle := LoadBitmap(HInstance,'PROP');
+  FCSSAttrBmp := TBitmap.Create;
+  FCSSAttrBmp.Handle := LoadBitmap(HInstance,'CSSATTR');
+  FHTMLTagBmp := TBitmap.Create;
+  FHTMLTagBmp.Handle := LoadBitmap(HInstance,'HTMLTAG');
+end;
+
+destructor TWordBox.Destroy;
+begin
+  inherited Destroy;
+end;
+
+
+procedure TWordBox.WMHotKey(var msg: TWMKeyDown);
+var
+  i,n,FIndex: Integer;
+  str: String;
+begin
+  if not((msg.CharCode = 37) or (msg.CharCode = 39)) then
+    inherited
+  else begin
+    MainForm.Docs[MainForm.ActivDocID].KeyDown(Self, msg.CharCode, []);
+
+    if msg.CharCode = 37 then begin
+      if Length(PREF_) > 0 then
+        PREF_ := Copy(PREF_,1,Length(PREF_)-1)
+      else begin
+        TForm(Parent).Close;
+        Exit;
+      end;
+    end;
+
+    if msg.CharCode = 39 then begin
+      PREF_ := PREF_ + MainForm.Docs[MainForm.ActivDocID].GetCaretChar;
+    end;
+
+    if msg.CharCode <> 13 then begin
+      Clear;
+      Items.BeginUpdate;
+
+      if (PlaceState = ScanPHP) or (PlaceState = ScanFunc) then begin
+        for i := 0 to PHPFuncList.Count - 1 do begin
+          if PREF_ = Copy(PHPFuncList[i],1,Length(PREF_)) then
+            AddItem(PHPFuncList[i], TObject(1004));
+        end;
+      end;
+      if PlaceState = ScanNormal then begin
+        for i := 0 to HtmlTagList.Count - 1 do begin
+          if PREF_ = Copy(HtmlTagList[i],1,Length(PREF_)) then
+            AddItem('<'+HtmlTagList[i]+'>',TObject(1005));
+        end;
+      end;
+      if (PlaceState = ScanOpenHTML) or (PlaceState = ScanOpenCSS) or (PlaceState = ScanOpenJS)  then begin
+        for i := 0 to HtmlAttrList.Count - 1 do begin
+          if PREF_ = Copy(HtmlAttrList[i],1,Length(PREF_)) then
+            AddItem(HtmlAttrList[i],TObject(1003));
+        end;
+        for i := 0 to HtmlMethodsList.Count - 1 do begin
+          if PREF_ = Copy(HtmlMethodsList[i],1,Length(PREF_)) then
+            AddItem(HtmlMethodsList[i],TObject(1002));
+        end;
+      end;
+      if PlaceState = ScanCSSBody then begin
+        for i := 0 to CSSAttrList.Count - 1 do begin
+          if PREF_ = Copy(CSSAttrList[i],1,Length(PREF_)) then
+            AddItem(CSSAttrList[i],TObject(1006));
+        end;
+        //поиск по атрибуту, можно загрузить только свойства атрибута
+        if Items.Count = 0 then begin
+          SetLength(PREF_, Length(PREF_) - 1);
+
+          if CSSAttrList.Find(PREF_, FIndex) then begin
+            for i := 0 to CSSValList.Count - 1 do begin
+              AddItem(CSSValList[i],TObject(1003));
+            end;
+            PREF_  := '';
+            PlaceState := ScanCSSVal;
+          end;
+        end;
+      end;
+      if PlaceState = ScanCSSVal then begin
+        for i := 1 to Length(PREF_) do begin
+          if PREF_[i] = ':' then begin
+            PREF_ := Copy(PREF_,i+1,Length(PREF_));
+            Break;
+          end;
+        end;
+
+        for i := 0 to CSSValList.Count - 1 do begin
+          if PREF_ = Copy(CSSValList[i],1,Length(PREF_)) then
+            AddItem(CSSValList[i],TObject(1003));
+        end;
+      end;
+      if (PlaceState = ScanJSBody) then begin
+        for i := 0 to JSObjectList.Count - 1 do begin
+          if PREF_ = Copy(JSObjectList[i],1,Length(PREF_)) then
+            AddItem(JSObjectList[i], TObject(1001));
+        end;
+        for i := 0 to JSMethodsList.Count - 1 do begin
+          if PREF_ = Copy(JSMethodsList[i],1,Length(PREF_)) then
+            AddItem(JSMethodsList[i], TObject(1002));
+        end;
+        for i := 0 to JSPropList.Count - 1 do begin
+          if PREF_ = Copy(JSPropList[i],1,Length(PREF_)) then
+            AddItem(JSPropList[i], TObject(1003));
+        end;
+      end;
+      if (PlaceState = ScanHTMLAttr) then begin
+        for i := 0 to HtmlAttrList.Count - 1 do begin
+          if PREF_ = Copy(HtmlAttrList[i],1,Length(PREF_)) then
+            AddItem(HtmlAttrList[i],TObject(1003));
+        end;
+        for i := 0 to HtmlMethodsList.Count - 1 do begin
+          if PREF_ = Copy(HtmlMethodsList[i],1,Length(PREF_)) then
+            AddItem(HtmlMethodsList[i],TObject(1002));
+        end;
+      end;
+
+      Items.EndUpdate;
+      if Items.Count = 0 then TForm(Parent).Close;
+    end;
+  end;
+
+  if msg.CharCode = 13 then begin
+    case PlaceState of
+      ScanPHP: begin
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex], Length(PREF_), True, True);
+      end;
+      ScanFunc: begin
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex], Length(PREF_), True, True);
+      end;
+      ScanNormal: begin
+        str := Items[ItemIndex];
+        Insert('/',str,2);
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex]+str, Length(PREF_), True, False);
+      end;
+      ScanOpenHTML, ScanOpenCSS, ScanOpenJS: begin
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex]+'=""', Length(PREF_), True, True);
+        //MainForm.Docs[MainForm.ActivDocID].DecCaretX;
+      end;
+      ScanCSSBody: begin
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex], Length(PREF_), True, True);
+      end;
+      ScanCSSVal: begin
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex], Length(PREF_), True, True);
+      end;
+      ScanJSBody: begin
+        MainForm.Docs[MainForm.ActivDocID].InsertWord(Items[ItemIndex], Length(PREF_), True, True);
+      end;
+    end;
+    TForm(Parent).Visible := False;
+    TForm(Parent).Close;
+  end;
+
+  if msg.CharCode = 27 then TForm(Parent).Close;
+end;
+
+procedure TWordBoxForm.FormCreate(Sender: TObject);
+begin
+  ListBox := TWordBox.Create(Self);
+  ListBox.Parent := Self;
+  ListBox.Align := alClient;
+  Panel.Color := clBtnFace;
+end;
+
+procedure TWordBoxForm.SetParams;
+var
+  LF: Integer;
+  i,j: Integer;
+  FIndex: Integer;
+begin
+  LF :=  MainForm.Docs[MainForm.ActivDocID].CreateScreenAnchorBox;
+  Left := MainForm.Docs[MainForm.ActivDocID].ScreenAnchorBox.ClientToScreen(Point(0,0)).X + LF;
+  Top := MainForm.Docs[MainForm.ActivDocID].ScreenAnchorBox.ClientToScreen(Point(0,0)).Y;
+  MainForm.Docs[MainForm.ActivDocID].FreeScreenAnchorBox;
+
+  ListBox.PlaceState := MainForm.Docs[MainForm.ActivDocID].GetPlaceState.PlaceState;
+  ListBox.PlaceScanMd := MainForm.Docs[MainForm.ActivDocID].GetPlaceState.DocSmType;
+  ListBox.PREF_ := MainForm.Docs[MainForm.ActivDocID].GetPref;
+
+  ListBox.Clear;
+  ListBox.Items.BeginUpdate;
+
+  if (ListBox.PlaceState = ScanPHP) or (ListBox.PlaceState = ScanFunc) then begin
+    for i := 0 to PHPFuncList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(PHPFuncList[i],1,Length(ListBox.PREF_)) then
+        ListBox.Items.AddObject(PHPFuncList[i], TObject(1004));
+    end;
+  end;
+  if ListBox.PlaceState = ScanNormal then begin
+    for i := 0 to HtmlTagList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(HtmlTagList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem('<'+HtmlTagList[i]+'>',TObject(1005));
+    end;
+  end;
+  if (ListBox.PlaceState = ScanOpenHTML) or (ListBox.PlaceState = ScanOpenCSS) or (ListBox.PlaceState = ScanOpenJS)  then begin
+    for i := 0 to HtmlAttrList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(HtmlAttrList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(HtmlAttrList[i],TObject(1003));
+    end;
+    for i := 0 to HtmlMethodsList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(HtmlMethodsList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(HtmlMethodsList[i],TObject(1002));
+    end;
+  end;
+  if ListBox.PlaceState = ScanCSSBody then begin
+    for i := 0 to CSSAttrList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(CSSAttrList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(CSSAttrList[i],TObject(1006));
+    end;
+    //поиск по атрибуту, можно загрузить только свойства атрибута
+    if ListBox.Items.Count = 0 then begin
+      SetLength(ListBox.PREF_, Length(ListBox.PREF_) - 1);
+
+      if CSSAttrList.Find(ListBox.PREF_, FIndex) then begin
+        for i := 0 to CSSValList.Count - 1 do begin
+          ListBox.AddItem(CSSValList[i],TObject(1003));
+        end;
+        ListBox.PREF_  := '';
+        ListBox.PlaceState := ScanCSSVal;
+      end;
+    end;
+  end;
+  if ListBox.PlaceState = ScanCSSVal then begin
+    for i := 1 to Length(ListBox.PREF_) do begin
+      if ListBox.PREF_[i] = ':' then begin
+        ListBox.PREF_ := Copy(ListBox.PREF_,i+1,Length(ListBox.PREF_));
+        Break;
+      end;
+    end;
+
+    for i := 0 to CSSValList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(CSSValList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(CSSValList[i],TObject(1003));
+    end;
+  end;
+  if (ListBox.PlaceState = ScanJSBody) then begin
+    for i := 0 to JSObjectList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(JSObjectList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(JSObjectList[i], TObject(1001));
+    end;
+    for i := 0 to JSMethodsList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(JSMethodsList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(JSMethodsList[i], TObject(1002));
+    end;
+    for i := 0 to JSPropList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(JSPropList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(JSPropList[i], TObject(1003));
+    end;
+  end;
+  if (ListBox.PlaceState = ScanHTMLAttr)   then begin
+    for i := 0 to HtmlAttrList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(HtmlAttrList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(HtmlAttrList[i],TObject(1003));
+    end;
+    for i := 0 to HtmlMethodsList.Count - 1 do begin
+      if ListBox.PREF_ = Copy(HtmlMethodsList[i],1,Length(ListBox.PREF_)) then
+        ListBox.AddItem(HtmlMethodsList[i],TObject(1002));
+    end;
+  end;
+
+  ListBox.Items.EndUpdate;
+
+  if ListBox.Items.Count = 0 then begin
+    Width := 100;
+    Height := 20;
+    ListBox.Visible := False;
+  end else begin
+    Width := 300;
+    Height := 230;
+    ListBox.Visible := True;
+  end;
+end;
+
+procedure TWordBoxForm.FormKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  MainForm.Docs[MainForm.ActivDocID].KeyDown(Self, Key, []);
+  Close;
+end;
+
+procedure TWordBoxForm.FormKeyPress(Sender: TObject; var Key: Char);
+begin
+  MainForm.Docs[MainForm.ActivDocID].KeyPress(Self, Key);
+  Close;
+end;
+
+procedure TWordBox.DblClick(Sender: TObject);
+begin
+//
+end;
+
+procedure TWordBox.ListBoxDrawItem(Control: TWinControl;
+  Index: Integer; Rect: TRect; State: TOwnerDrawState);
+begin
+  with (Control as TListBox).Canvas do
+  begin
+    if odSelected in State then
+      Brush.Color := $00FFD2A6;
+
+    FillRect(Rect);
+
+    case Integer(Items.Objects[Index]) of
+      1001: Draw(Rect.Left, Rect.Top, FJSObjBmp);
+      1002: Draw(Rect.Left, Rect.Top, FJSMthBmp);
+      1003: Draw(Rect.Left, Rect.Top, FPropBtm);
+      1004: Draw(Rect.Left, Rect.Top, FPHPFuncBmp);
+      1005: Draw(Rect.Left, Rect.Top, FHTMLTagBmp);
+      1006: Draw(Rect.Left, Rect.Top, FCSSAttrBmp);
+    end;
+
+    TextOut(Rect.Left+20, Rect.Top, (Control as TListBox).Items[Index]);
+
+    if odFocused In State then begin
+      Brush.Color := (Control as TListBox).Color;
+      DrawFocusRect(Rect);
+    end;
+  end;
+end;
+
+procedure TWordBox.KeyPress(Sender: TObject; var Key: Char);
+var
+  i, FIndex: Integer;
+begin
+  if Ord(Key) = 13 then begin
+    TForm(Parent).Close;
+    Exit;
+  end;
+
+  PREF_ := PREF_ + Key;
+
+  Clear;
+  Items.BeginUpdate;
+
+  if (PlaceState = ScanPHP) or (PlaceState = ScanFunc) then begin
+    for i := 0 to PHPFuncList.Count - 1 do begin
+      if PREF_ = Copy(PHPFuncList[i],1,Length(PREF_)) then
+        AddItem(PHPFuncList[i], TObject(1004));
+    end;
+  end;
+  if PlaceState = ScanNormal then begin
+    for i := 0 to HtmlTagList.Count - 1 do begin
+      if PREF_ = Copy(HtmlTagList[i],1,Length(PREF_)) then
+        AddItem('<'+HtmlTagList[i]+'>',TObject(1005));
+    end;
+  end;
+  if (PlaceState = ScanOpenHTML) or (PlaceState = ScanOpenCSS) or (PlaceState = ScanOpenJS)  then begin
+    for i := 0 to HtmlAttrList.Count - 1 do begin
+      if PREF_ = Copy(HtmlAttrList[i],1,Length(PREF_)) then
+        AddItem(HtmlAttrList[i],TObject(1003));
+    end;
+    for i := 0 to HtmlMethodsList.Count - 1 do begin
+      if PREF_ = Copy(HtmlMethodsList[i],1,Length(PREF_)) then
+        AddItem(HtmlMethodsList[i],TObject(1002));
+    end;
+  end;
+  if PlaceState = ScanCSSBody then begin
+    for i := 0 to CSSAttrList.Count - 1 do begin
+      if PREF_ = Copy(CSSAttrList[i],1,Length(PREF_)) then
+        AddItem(CSSAttrList[i],TObject(1006));
+    end;
+    //поиск по атрибуту, можно загрузить только свойства атрибута
+    if Items.Count = 0 then begin
+      SetLength(PREF_, Length(PREF_) - 1);
+
+      if CSSAttrList.Find(PREF_, FIndex) then begin
+        for i := 0 to CSSValList.Count - 1 do begin
+          AddItem(CSSValList[i],TObject(1003));
+        end;
+        PREF_  := '';
+        PlaceState := ScanCSSVal;
+      end;
+    end;
+  end;
+  if PlaceState = ScanCSSVal then begin
+    for i := 1 to Length(PREF_) do begin
+      if PREF_[i] = ':' then begin
+        PREF_ := Copy(PREF_,i+1,Length(PREF_));
+        Break;
+      end;
+    end;
+
+    for i := 0 to CSSValList.Count - 1 do begin
+      if PREF_ = Copy(CSSValList[i],1,Length(PREF_)) then
+        AddItem(CSSValList[i],TObject(1003));
+    end;
+  end;
+  if (PlaceState = ScanJSBody) then begin
+    for i := 0 to JSObjectList.Count - 1 do begin
+      if PREF_ = Copy(JSObjectList[i],1,Length(PREF_)) then
+        AddItem(JSObjectList[i], TObject(1001));
+    end;
+    for i := 0 to JSMethodsList.Count - 1 do begin
+      if PREF_ = Copy(JSMethodsList[i],1,Length(PREF_)) then
+        AddItem(JSMethodsList[i], TObject(1002));
+    end;
+    for i := 0 to JSPropList.Count - 1 do begin
+      if PREF_ = Copy(JSPropList[i],1,Length(PREF_)) then
+        AddItem(JSPropList[i], TObject(1003));
+    end;
+  end;
+  if (PlaceState = ScanHTMLAttr)  then begin
+    for i := 0 to HtmlAttrList.Count - 1 do begin
+      if PREF_ = Copy(HtmlAttrList[i],1,Length(PREF_)) then
+        AddItem(HtmlAttrList[i],TObject(1003));
+    end;
+    for i := 0 to HtmlMethodsList.Count - 1 do begin
+      if PREF_ = Copy(HtmlMethodsList[i],1,Length(PREF_)) then
+        AddItem(HtmlMethodsList[i],TObject(1002));
+    end;
+  end;
+
+  Items.EndUpdate;
+
+  if Items.Count = 0 then TForm(Parent).Close;
+
+  MainForm.Docs[MainForm.ActivDocID].KeyPress(Self, Key);
+  Key := #0;
+end;
+
+end.

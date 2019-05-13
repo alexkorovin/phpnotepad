@@ -1,0 +1,28 @@
+program PHPNotepad;
+
+uses
+  Forms,
+  Main in 'Main.pas' {MainForm},
+  PHPEdit in 'PHPEdit.pas',
+  TabControl in 'TabControl.pas',
+  URForm in 'URForm.pas' {FormUR},
+  WordBoxInit in 'WordBoxInit.pas',
+  WordBox in 'WordBox.pas' {WordBoxForm},
+  Search in 'Search.pas' {SearchForm},
+  Encoding in 'Encoding.pas',
+  StringListUnicodeSupport in 'StringListUnicodeSupport.pas',
+  ShortHelp in 'ShortHelp.pas' {ShortHelpForm},
+  ABox in 'ABox.pas' {AboutBox};
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.CreateForm(TMainForm, MainForm);
+  Application.CreateForm(TFormUR, FormUR);
+  Application.CreateForm(TWordBoxForm, WordBoxForm);
+  Application.CreateForm(TSearchForm, SearchForm);
+  Application.CreateForm(TShortHelpForm, ShortHelpForm);
+  Application.CreateForm(TAboutBox, AboutBox);
+  Application.Run;
+end.

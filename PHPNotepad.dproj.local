@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.091,E:\__final_6_v_2_0_0_12\Unit1.dfm=E:\__final_6_v_2_0_0_12\AddEval.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.506,E:\__final_6_v_2_0_0_12\Unit1.dfm=E:\__final_6_v_2_0_0_12\EvalView.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.390,E:\__final_6_v_2_0_0_14\DBGpConfig.dfm=E:\__final_6_v_2_0_0_14\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.276,E:\__final\StyleConfigurator.dfm=E:\__final\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.443,=E:\__final_6_v_2_0_0_14\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.567,E:\__final_6_v_2_0_0_9\Unit1.dfm=E:\__final_6_v_2_0_0_9\AddWatch.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.813,E:\__final_6_v_2_0_0_12\GUnit.pas=E:\__final_6_v_2_0_0_12\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.408,E:\__final_6_v_2_0_0_12\GUnit.pas=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.069,=D:\__final_6_v_2_0_0\DBGp.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.390,E:\__final_6_v_2_0_0_14\DBGpConfig.pas=E:\__final_6_v_2_0_0_14\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.079,=E:\__final_6_v_2_0_0_12\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.516,=E:\__final_6_v_2_0_0_12\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.383,=E:\__final_6_v_2_0_0_12\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.091,E:\__final_6_v_2_0_0_12\Unit1.pas=E:\__final_6_v_2_0_0_12\AddEval.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.506,E:\__final_6_v_2_0_0_12\Unit1.pas=E:\__final_6_v_2_0_0_12\EvalView.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.815,=E:\__final\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.598,=E:\__final\Unit2.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.567,E:\__final_6_v_2_0_0_9\Unit1.pas=E:\__final_6_v_2_0_0_9\AddWatch.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.521,=E:\__final_6_v_2_0_0_9\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.276,E:\__final\StyleConfigurator.pas=E:\__final\Unit1.pas</Transaction>
+  </Transactions>
+	<ProjectSortOrder AutoSort="0" SortType="0">
+    <File Path="ABox.pas"/>
+    <File Path="ABox.dfm"/>
+    <File Path="DocumentMap.pas"/>
+    <File Path="Encoding.pas"/>
+    <File Path="Main.pas"/>
+    <File Path="Main.dfm"/>
+    <File Path="PHPEdit.pas"/>
+    <File Path="Search.pas"/>
+    <File Path="Search.dfm"/>
+    <File Path="ShortHelp.pas"/>
+    <File Path="ShortHelp.dfm"/>
+    <File Path="StringListUnicodeSupport.pas"/>
+    <File Path="StyleConfigurator.pas"/>
+    <File Path="StyleConfigurator.dfm"/>
+    <File Path="TabControl.pas"/>
+    <File Path="WordBox.pas"/>
+    <File Path="WordBox.dfm"/>
+    <File Path="WordBoxInit.pas"/>
+    <File Path="DBGp.pas"/>
+    <File Path="AddWatch.pas"/>
+    <File Path="AddWatch.dfm"/>
+    <File Path="AddEval.pas"/>
+    <File Path="AddEval.dfm"/>
+    <File Path="EvalView.pas"/>
+    <File Path="EvalView.dfm"/>
+    <File Path="DBGpConfig.pas"/>
+    <File Path="DBGpConfig.dfm"/>
+  </ProjectSortOrder>
+</BorlandProject>
